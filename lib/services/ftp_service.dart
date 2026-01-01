@@ -14,7 +14,14 @@ class FTPService {
       // Note: isSecured enables FTPS (FTP over TLS). 
       // If implicit FTPS is needed, additional config might be required depending on the library version,
       // but usually this handles explicit FTPS.
-      _ftpConnect = FTPConnect(host, port: port, user: user, pass: pass, securityType: isSecure ? SecurityType.FTPS : SecurityType.FTP);
+      _ftpConnect = FTPConnect(
+        host, 
+        port: port, 
+        user: user, 
+        pass: pass, 
+        securityType: isSecure ? SecurityType.FTPS : SecurityType.FTP,
+        timeout: 60, // Increase timeout to 60 seconds
+      );
       
       await _ftpConnect!.connect();
       return true;

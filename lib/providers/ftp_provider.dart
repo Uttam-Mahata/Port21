@@ -29,9 +29,17 @@ class FTPProvider with ChangeNotifier {
   FTPService get service => _ftpService;
   List<ConnectionProfile> get savedProfiles => _savedProfiles;
   
+  // Multi-file upload state
+  int _totalUploadFiles = 0;
+  int _currentUploadIndex = 0;
+  String _currentUploadFileName = "";
+
   double get uploadProgress => _uploadProgress;
   String get uploadSpeed => _uploadSpeed;
   bool get isUploading => _isUploading;
+  int get totalUploadFiles => _totalUploadFiles;
+  int get currentUploadIndex => _currentUploadIndex;
+  String get currentUploadFileName => _currentUploadFileName;
 
   Timer? _keepAliveTimer;
 
@@ -160,18 +168,54 @@ class FTPProvider with ChangeNotifier {
       await _fetchFiles();
   }
   
-  Future<bool> uploadFile(File file) async {
-      _setLoading(true); // Keep general loading for spinner if needed, but we use isUploading for dialog
-      _isUploading = true;
-      _uploadProgress = 0.0;
-      _uploadSpeed = "0 B/s";
-      notifyListeners();
+  Future<bool> uploadMultipleFiles(List<File> files) async {
+    if (files.isEmpty) return false;
 
+    _setLoading(true);
+    _isUploading = true;
+    _totalUploadFiles = files.length;
+    _currentUploadIndex = 0;
+    _uploadProgress = 0.0;
+    _uploadSpeed = "0 B/s";
+    notifyListeners();
+
+    bool allSuccess = true;
+
+    for (int i = 0; i < files.length; i++) {
+      _currentUploadIndex = i + 1;
+      _currentUploadFileName = files[i].path.split(Platform.pathSeparator).last;
+      notifyListeners(); // Update UI for new file
+
+      bool success = await _uploadSingleFileInternal(files[i]);
+      if (!success) allSuccess = false;
+      
+      // key: Add a small delay between uploads to prevent server rate-limiting/timeouts
+      if (i < files.length - 1) {
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+    }
+
+    _isUploading = false;
+    if (allSuccess) {
+      await _fetchFiles();
+    } else {
+      _errorMessage = "Some files failed to upload.";
+    }
+    _setLoading(false);
+    return allSuccess;
+  }
+
+  Future<bool> _uploadSingleFileInternal(File file) async {
       String fileName = file.path.split(Platform.pathSeparator).last;
       DateTime startTime = DateTime.now();
       
+      // Reset progress for new file
+      _uploadProgress = 0.0;
+      // Do NOT notifyListeners here, or it might flash 0%. 
+      // The onProgress will call it soon enough.
+
       bool success = await _ftpService.uploadFile(file, fileName, onProgress: (progress, sent, total) {
-          _uploadProgress = progress / 100.0; // Assume 0-100 range from library
+          _uploadProgress = progress / 100.0; 
           
           final elapsed = DateTime.now().difference(startTime).inMilliseconds;
           if (elapsed > 0) {
@@ -180,15 +224,11 @@ class FTPProvider with ChangeNotifier {
           }
           notifyListeners();
       });
-
-      _isUploading = false;
-      if (success) {
-        await _fetchFiles();
-      } else {
-        _errorMessage = "Failed to upload file.";
-      }
-      _setLoading(false);
       return success;
+  }
+  
+  Future<bool> uploadFile(File file) async {
+      return uploadMultipleFiles([file]);
   }
   
   String _formatSpeed(double bytesPerSec) {

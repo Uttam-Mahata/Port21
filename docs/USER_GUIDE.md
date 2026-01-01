@@ -34,12 +34,12 @@
 
 ### Upload
 1. Tap the **+ (Plus)** button in the bottom right corner.
-2. Select the file you wish to upload from your device's file picker.
+2. Select one or **multiple files** from your device's file picker (long-press to select multiple).
 3. A **Progress Dialog** will appear showing:
-   - Upload progress bar.
-   - Percentage completion.
-   - Current upload speed (e.g., 1.2 MB/s).
-4. Do not close the app while uploading. The dialog will close automatically upon completion.
+   - "Uploading 1/X" counter.
+   - Current file name and progress.
+   - Upload speed.
+4. Do not close the app while uploading. The dialog will close automatically when **all files** are uploaded.
 
 ### Create Folder
 1. Tap the **Create Folder** icon (folder with a plus sign) in the top menu bar.

@@ -165,10 +165,10 @@ class BrowserScreen extends StatelessWidget {
   }
 
   Future<void> _uploadFile(BuildContext context) async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles();
+    FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true);
 
-    if (result != null && result.files.single.path != null) {
-      File file = File(result.files.single.path!);
+    if (result != null && result.paths.isNotEmpty) {
+      List<File> files = result.paths.map((path) => File(path!)).toList();
       
       if (!context.mounted) return;
 
@@ -177,38 +177,45 @@ class BrowserScreen extends StatelessWidget {
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
-          title: const Text("Uploading File"),
+          title: Consumer<FTPProvider>(
+            builder: (context, ftp, child) {
+              return Text("Uploading ${ftp.currentUploadIndex}/${ftp.totalUploadFiles}");
+            },
+          ),
           content: Consumer<FTPProvider>(
             builder: (context, ftp, child) {
-              return Column(
+                if (!ftp.isUploading && ftp.errorMessage == null) {
+                    // Upload finished successfully, wait for dialog to close
+                    return const SizedBox(height: 50, child: Center(child: Text("Finalizing...")));
+                }
+                return Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                   Text("Uploading ${file.path.split(Platform.pathSeparator).last}"),
-                   const SizedBox(height: 16),
-                   LinearProgressIndicator(value: ftp.uploadProgress),
-                   const SizedBox(height: 16),
-                   Row(
-                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                     children: [
-                       Text("${(ftp.uploadProgress * 100).toStringAsFixed(0)}%"),
-                       Text(ftp.uploadSpeed),
-                     ],
-                   )
+                  Text("File: ${ftp.currentUploadFileName}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  LinearProgressIndicator(value: ftp.uploadProgress),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("${(ftp.uploadProgress * 100).toStringAsFixed(1)}%"),
+                      Text(ftp.uploadSpeed),
+                    ],
+                  ),
                 ],
               );
             }
           ),
         ),
       );
-      
-      // Perform upload
-      bool success = await context.read<FTPProvider>().uploadFile(file);
+
+      bool success = await context.read<FTPProvider>().uploadMultipleFiles(files);
       
       if (context.mounted) {
-        Navigator.of(context).pop(); // Close dialog
-        
+        Navigator.pop(context); // Close dialog
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(success ? "Upload Successful" : "Upload Failed"))
+          SnackBar(content: Text(success ? "Uploaded ${files.length} files successfully" : "Some uploads failed")),
         );
       }
     }
