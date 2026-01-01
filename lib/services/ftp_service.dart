@@ -50,10 +50,10 @@ class FTPService {
     }
   }
 
-  Future<bool> uploadFile(File file, String remoteFileName) async {
+  Future<bool> uploadFile(File file, String remoteFileName, {Function(double, int, int)? onProgress}) async {
     if (_ftpConnect == null) return false;
     try {
-      return await _ftpConnect!.uploadFile(file, sRemoteName: remoteFileName);
+      return await _ftpConnect!.uploadFile(file, sRemoteName: remoteFileName, onProgress: onProgress);
     } catch (e, stackTrace) {
       _logger.e("Upload Error: $e", error: e, stackTrace: stackTrace);
       return false;

@@ -164,7 +164,48 @@ class BrowserScreen extends StatelessWidget {
 
     if (result != null && result.files.single.path != null) {
       File file = File(result.files.single.path!);
-      await context.read<FTPProvider>().uploadFile(file);
+      
+      if (!context.mounted) return;
+
+      // Show progress dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          title: const Text("Uploading File"),
+          content: Consumer<FTPProvider>(
+            builder: (context, ftp, child) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                   Text("Uploading ${file.path.split(Platform.pathSeparator).last}"),
+                   const SizedBox(height: 16),
+                   LinearProgressIndicator(value: ftp.uploadProgress),
+                   const SizedBox(height: 16),
+                   Row(
+                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                     children: [
+                       Text("${(ftp.uploadProgress * 100).toStringAsFixed(0)}%"),
+                       Text(ftp.uploadSpeed),
+                     ],
+                   )
+                ],
+              );
+            }
+          ),
+        ),
+      );
+      
+      // Perform upload
+      bool success = await context.read<FTPProvider>().uploadFile(file);
+      
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Close dialog
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(success ? "Upload Successful" : "Upload Failed"))
+        );
+      }
     }
   }
 

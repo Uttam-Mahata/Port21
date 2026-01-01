@@ -16,6 +16,11 @@ class FTPProvider with ChangeNotifier {
   bool _isConnected = false;
   List<ConnectionProfile> _savedProfiles = [];
 
+  // Upload Progress State
+  double _uploadProgress = 0.0;
+  String _uploadSpeed = "";
+  bool _isUploading = false;
+
   List<FTPEntry> get files => _files;
   String get currentPath => _currentPath;
   bool get isLoading => _isLoading;
@@ -23,6 +28,10 @@ class FTPProvider with ChangeNotifier {
   bool get isConnected => _isConnected;
   FTPService get service => _ftpService;
   List<ConnectionProfile> get savedProfiles => _savedProfiles;
+  
+  double get uploadProgress => _uploadProgress;
+  String get uploadSpeed => _uploadSpeed;
+  bool get isUploading => _isUploading;
 
   Timer? _keepAliveTimer;
 
@@ -152,9 +161,27 @@ class FTPProvider with ChangeNotifier {
   }
   
   Future<bool> uploadFile(File file) async {
-      _setLoading(true);
+      _setLoading(true); // Keep general loading for spinner if needed, but we use isUploading for dialog
+      _isUploading = true;
+      _uploadProgress = 0.0;
+      _uploadSpeed = "0 B/s";
+      notifyListeners();
+
       String fileName = file.path.split(Platform.pathSeparator).last;
-      bool success = await _ftpService.uploadFile(file, fileName);
+      DateTime startTime = DateTime.now();
+      
+      bool success = await _ftpService.uploadFile(file, fileName, onProgress: (progress, sent, total) {
+          _uploadProgress = progress / 100.0; // Assume 0-100 range from library
+          
+          final elapsed = DateTime.now().difference(startTime).inMilliseconds;
+          if (elapsed > 0) {
+             double speedBytesPerSec = (sent / elapsed) * 1000;
+             _uploadSpeed = _formatSpeed(speedBytesPerSec);
+          }
+          notifyListeners();
+      });
+
+      _isUploading = false;
       if (success) {
         await _fetchFiles();
       } else {
@@ -162,6 +189,12 @@ class FTPProvider with ChangeNotifier {
       }
       _setLoading(false);
       return success;
+  }
+  
+  String _formatSpeed(double bytesPerSec) {
+    if (bytesPerSec < 1024) return '${bytesPerSec.toStringAsFixed(0)} B/s';
+    if (bytesPerSec < 1024 * 1024) return '${(bytesPerSec / 1024).toStringAsFixed(1)} KB/s';
+    return '${(bytesPerSec / (1024 * 1024)).toStringAsFixed(1)} MB/s';
   }
   
   Future<bool> downloadFile(FTPEntry entry, String localDirectory) async {
