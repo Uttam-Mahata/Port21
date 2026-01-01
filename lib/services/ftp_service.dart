@@ -54,8 +54,8 @@ class FTPService {
     if (_ftpConnect == null) return false;
     try {
       return await _ftpConnect!.uploadFile(file, sRemoteName: remoteFileName);
-    } catch (e) {
-      _logger.e("Upload Error: $e");
+    } catch (e, stackTrace) {
+      _logger.e("Upload Error: $e", error: e, stackTrace: stackTrace);
       return false;
     }
   }
@@ -64,8 +64,8 @@ class FTPService {
     if (_ftpConnect == null) return false;
     try {
       return await _ftpConnect!.downloadFile(remoteFileName, localFile);
-    } catch (e) {
-      _logger.e("Download Error: $e");
+    } catch (e, stackTrace) {
+      _logger.e("Download Error: $e", error: e, stackTrace: stackTrace);
       return false;
     }
   }
@@ -74,8 +74,8 @@ class FTPService {
      if (_ftpConnect == null) return false;
      try {
        return await _ftpConnect!.makeDirectory(directoryName);
-     } catch (e) {
-       _logger.e("Create Directory Error: $e");
+     } catch (e, stackTrace) {
+       _logger.e("Create Directory Error: $e", error: e, stackTrace: stackTrace);
        return false;
      }
   }
@@ -84,9 +84,18 @@ class FTPService {
     if (_ftpConnect == null) return false;
     try {
       return await _ftpConnect!.deleteFile(fileName);
-    } catch (e) {
-      _logger.e("Delete File Error: $e");
+    } catch (e, stackTrace) {
+      _logger.e("Delete File Error: $e", error: e, stackTrace: stackTrace);
       return false;
+    }
+  }
+
+  Future<void> sendNoOp() async {
+    if (_ftpConnect == null) return;
+    try {
+      await _ftpConnect!.sendCustomCommand('NOOP');
+    } catch (_) {
+      // Ignore errors on NOOP, connection might be dead already
     }
   }
 }

@@ -1,7 +1,10 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:ftpconnect/ftpconnect.dart';
 import '../services/ftp_service.dart';
+import 'package:port21/services/storage_service.dart';
+import 'package:port21/models/connection_profile.dart';
 
 class FTPProvider with ChangeNotifier {
   final FTPService _ftpService = FTPService();
@@ -11,6 +14,7 @@ class FTPProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   bool _isConnected = false;
+  List<ConnectionProfile> _savedProfiles = [];
 
   List<FTPEntry> get files => _files;
   String get currentPath => _currentPath;
@@ -18,24 +22,67 @@ class FTPProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isConnected => _isConnected;
   FTPService get service => _ftpService;
+  List<ConnectionProfile> get savedProfiles => _savedProfiles;
+
+  Timer? _keepAliveTimer;
+
+  FTPProvider() {
+    _loadSavedProfiles();
+  }
+
+  @override
+  void dispose() {
+    _keepAliveTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startKeepAlive() {
+    _keepAliveTimer?.cancel();
+    _keepAliveTimer = Timer.periodic(const Duration(seconds: 45), (timer) {
+      if (_isConnected) {
+        _ftpService.sendNoOp();
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  Future<void> _loadSavedProfiles() async {
+    _savedProfiles = await StorageService().getProfiles();
+    notifyListeners();
+  }
+
+  Future<void> saveProfile(String host, int port, String user, String pass, bool isSecure) async {
+    final profile = ConnectionProfile(
+      host: host,
+      port: port,
+      username: user,
+      password: pass,
+      isSecure: isSecure,
+    );
+    await StorageService().saveProfile(profile);
+    await _loadSavedProfiles();
+  }
 
   Future<bool> connect(String host, int port, String user, String pass, {bool isSecure = false}) async {
-    _setLoading(true);
+    _isLoading = true;
     _errorMessage = null;
+    notifyListeners();
     
     // Reset path on new connection
     _currentPath = '/';
 
     bool success = await _ftpService.connect(host, port, user, pass, isSecure: isSecure);
     
+    _isLoading = false;
     if (success) {
       _isConnected = true;
+      _startKeepAlive();
       await _fetchFiles();
     } else {
       _errorMessage = "Failed to connect to server. Check credentials and network.";
     }
-    
-    _setLoading(false);
+    notifyListeners();
     return success;
   }
 
