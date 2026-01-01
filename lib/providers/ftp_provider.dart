@@ -64,6 +64,11 @@ class FTPProvider with ChangeNotifier {
     await _loadSavedProfiles();
   }
 
+  Future<void> deleteProfile(ConnectionProfile profile) async {
+    await StorageService().deleteProfile(profile);
+    await _loadSavedProfiles();
+  }
+
   Future<bool> connect(String host, int port, String user, String pass, {bool isSecure = false}) async {
     _isLoading = true;
     _errorMessage = null;

@@ -6,7 +6,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:ftpconnect/ftpconnect.dart';
 import '../providers/ftp_provider.dart';
-import 'login_screen.dart';
+import 'saved_connections_screen.dart';
+import 'login_screen.dart'; // Keep if needed, or remove if not used directly
 
 class BrowserScreen extends StatelessWidget {
   const BrowserScreen({super.key});
@@ -44,7 +45,7 @@ class BrowserScreen extends StatelessWidget {
                 await context.read<FTPProvider>().disconnect();
                 if (context.mounted) {
                   Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    MaterialPageRoute(builder: (_) => const SavedConnectionsScreen()),
                   );
                 }
               },
@@ -168,20 +169,31 @@ class BrowserScreen extends StatelessWidget {
   }
 
   Future<void> _downloadFile(BuildContext context, FTPEntry file) async {
-    // Basic permission check
-    PermissionStatus status = await Permission.storage.status;
-    if (!status.isGranted) {
-      status = await Permission.storage.request();
-    }
+    // Check permissions
+    bool hasPermission = false;
     
-    // For Android 13+ (SDK 33), READ/WRITE_EXTERNAL_STORAGE are granular
-    // But managing external storage is different.
-    // For now we assume standard permissions.
+    // Try Manage External Storage first (Android 11+)
+    if (await Permission.manageExternalStorage.isGranted) {
+      hasPermission = true;
+    } else if (await Permission.storage.isGranted) {
+      hasPermission = true;
+    } else {
+      // Request permissions
+      if (await Permission.manageExternalStorage.request().isGranted) {
+        hasPermission = true;
+      } else if (await Permission.storage.request().isGranted) {
+        hasPermission = true;
+      }
+    }
 
-    if (status.isGranted || await Permission.manageExternalStorage.isGranted || status.isLimited) {
+    if (hasPermission) {
        Directory? directory;
        if (Platform.isAndroid) {
-           directory = (await getExternalStorageDirectories(type: StorageDirectory.downloads))?.first;
+          // Use /storage/emulated/0/Download for easier access if we have permission
+           directory = Directory('/storage/emulated/0/Download');
+           if (!await directory.exists()) {
+             directory = (await getExternalStorageDirectories(type: StorageDirectory.downloads))?.first;
+           }
        } else {
            directory = await getApplicationDocumentsDirectory();
        }
@@ -200,7 +212,26 @@ class BrowserScreen extends StatelessWidget {
        }
     } else {
         if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Storage Permission Denied')));
+            showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('Permission Denied'),
+                content: const Text('Storage permission is required to save files. Please enable "All files access" in settings.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      openAppSettings();
+                    },
+                    child: const Text('Open Settings'),
+                  ),
+                ],
+              ),
+            );
         }
     }
   }

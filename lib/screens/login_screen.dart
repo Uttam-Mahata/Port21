@@ -7,7 +7,8 @@ import '../models/connection_profile.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final ConnectionProfile? profile;
+  const LoginScreen({super.key, this.profile});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -15,18 +16,36 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _hostController = TextEditingController();
-  final _portController = TextEditingController(text: '21');
-  final _userController = TextEditingController(text: 'anonymous');
-  final _passController = TextEditingController();
+  late final TextEditingController _hostController;
+  late final TextEditingController _portController;
+  late final TextEditingController _userController;
+  late final TextEditingController _passController;
   bool _isSecure = false;
   bool _saveConnection = false;
-  ConnectionProfile? _selectedProfile;
-
+  
   @override
   void initState() {
     super.initState();
     _checkPermissions();
+    
+    // Initialize with profile data or defaults
+    _hostController = TextEditingController(text: widget.profile?.host ?? '');
+    _portController = TextEditingController(text: widget.profile?.port.toString() ?? '21');
+    _userController = TextEditingController(text: widget.profile?.username ?? 'anonymous');
+    _passController = TextEditingController(text: widget.profile?.password ?? '');
+    _isSecure = widget.profile?.isSecure ?? false;
+    // If opening an existing profile, default to saving updates? Or just keep it separate.
+    // Let's default to false to be explicit, or true if it's a saved profile we are "editing" (conceptually).
+    // For simplicity, let user decide.
+  }
+
+  @override
+  void dispose() {
+    _hostController.dispose();
+    _portController.dispose();
+    _userController.dispose();
+    _passController.dispose();
+    super.dispose();
   }
 
   Future<void> _checkPermissions() async {
@@ -91,54 +110,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 24),
-                      // Saved Connections Dropdown
-                      Consumer<FTPProvider>(
-                        builder: (context, provider, child) {
-                          if (provider.savedProfiles.isEmpty) return const SizedBox.shrink();
-                          
-                          // Ensure selected profile is still valid
-                          ConnectionProfile? selectedValue;
-                           if (_selectedProfile != null) {
-                             if (provider.savedProfiles.contains(_selectedProfile)) {
-                               selectedValue = _selectedProfile;
-                             }
-                           }
-
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 24.0),
-                            child: DropdownButtonFormField<ConnectionProfile>(
-                              isExpanded: true, // Fix broken RenderFlex
-                              decoration: const InputDecoration(
-                                labelText: 'Saved Connections',
-                                border: OutlineInputBorder(),
-                                prefixIcon: Icon(Icons.bookmark),
-                              ),
-                              value: selectedValue,
-                              items: provider.savedProfiles.map((profile) {
-                                return DropdownMenuItem(
-                                  value: profile,
-                                  child: Text(
-                                    '${profile.username}@${profile.host}',
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: (profile) {
-                                if (profile != null) {
-                                  _hostController.text = profile.host;
-                                  _portController.text = profile.port.toString();
-                                  _userController.text = profile.username;
-                                  _passController.text = profile.password;
-                                  setState(() {
-                                    _selectedProfile = profile;
-                                    _isSecure = profile.isSecure;
-                                  });
-                                }
-                              },
-                            ),
-                          );
-                        },
-                      ),
                       TextFormField(
                         controller: _hostController,
                         decoration: const InputDecoration(

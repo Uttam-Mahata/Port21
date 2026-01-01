@@ -25,6 +25,16 @@ class StorageService {
     await prefs.setString(_keyProfiles, encodedData);
   }
 
+  Future<void> deleteProfile(ConnectionProfile profile) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<ConnectionProfile> profiles = await getProfiles();
+    
+    profiles.removeWhere((p) => p == profile);
+
+    final String encodedData = jsonEncode(profiles.map((p) => p.toJson()).toList());
+    await prefs.setString(_keyProfiles, encodedData);
+  }
+
   Future<List<ConnectionProfile>> getProfiles() async {
     final prefs = await SharedPreferences.getInstance();
     final String? encodedData = prefs.getString(_keyProfiles);
