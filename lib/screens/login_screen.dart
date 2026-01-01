@@ -26,7 +26,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _checkPermissions();
+    // Permissions will be checked on demand (when downloading)
     
     // Initialize with profile data or defaults
     _hostController = TextEditingController(text: widget.profile?.host ?? '');
@@ -34,41 +34,6 @@ class _LoginScreenState extends State<LoginScreen> {
     _userController = TextEditingController(text: widget.profile?.username ?? 'anonymous');
     _passController = TextEditingController(text: widget.profile?.password ?? '');
     _isSecure = widget.profile?.isSecure ?? false;
-    // If opening an existing profile, default to saving updates? Or just keep it separate.
-    // Let's default to false to be explicit, or true if it's a saved profile we are "editing" (conceptually).
-    // For simplicity, let user decide.
-  }
-
-  @override
-  void dispose() {
-    _hostController.dispose();
-    _portController.dispose();
-    _userController.dispose();
-    _passController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _checkPermissions() async {
-    // Request storage permissions on app start
-    // For Android 11+ (API 30+), use Manage External Storage for full access
-    if (await Permission.manageExternalStorage.request().isGranted) {
-      return; 
-    }
-    
-    // Fallback for older Android or if Manage External Storage is not applicable/denied
-    Map<Permission, PermissionStatus> statuses = await [
-      Permission.storage,
-      Permission.manageExternalStorage,
-    ].request();
-
-    if (statuses[Permission.storage]!.isDenied || statuses[Permission.manageExternalStorage]!.isDenied) {
-       // Optionally show a dialog explaining why
-       if (context.mounted) {
-         ScaffoldMessenger.of(context).showSnackBar(
-           const SnackBar(content: Text('Storage permissions are required to download/upload files.')),
-         );
-       }
-    }
   }
 
   @override

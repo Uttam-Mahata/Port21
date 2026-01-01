@@ -42,14 +42,52 @@ class SavedConnectionsScreen extends StatelessWidget {
                   leading: const CircleAvatar(child: Icon(Icons.dns)),
                   title: Text(profile.host),
                   subtitle: Text('${profile.username} • Port: ${profile.port}'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => LoginScreen(profile: profile),
-                      ),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.edit),
+                    onPressed: () {
+                       Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => LoginScreen(profile: profile),
+                        ),
+                      );
+                    },
+                  ),
+                  onTap: () async {
+                    // Show loading dialog
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (ctx) => const Center(child: CircularProgressIndicator()),
                     );
+
+                    final success = await provider.connect(
+                      profile.host,
+                      profile.port,
+                      profile.username,
+                      profile.password,
+                      isSecure: profile.isSecure,
+                    );
+
+                    if (context.mounted) {
+                      Navigator.pop(context); // Close loading dialog
+                      
+                      if (success) {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const BrowserScreen(),
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                           SnackBar(
+                             content: Text(provider.errorMessage ?? 'Connection failed'),
+                             backgroundColor: Colors.red,
+                           ),
+                        );
+                      }
+                    }
                   },
                   onLongPress: () {
                     showDialog(
