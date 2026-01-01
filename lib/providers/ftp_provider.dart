@@ -220,6 +220,18 @@ class FTPProvider with ChangeNotifier {
       return success;
   }
 
+  Future<bool> createDirectory(String directoryName) async {
+       _setLoading(true);
+       bool success = await _ftpService.createDirectory(directoryName);
+       if (success) {
+           await _fetchFiles();
+       } else {
+           _errorMessage = "Failed to create directory.";
+       }
+       _setLoading(false);
+       return success;
+  }
+
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();

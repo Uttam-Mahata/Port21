@@ -11,7 +11,11 @@
 3. **FTPS (Secure)**:
    - Toggle the **Use FTPS** switch ON if your server requires FTP over TLS (Encrypted).
    - Leave it OFF for standard unencrypted FTP.
-4. Tap **Connect**.
+### Saved Connections
+- When you connect successfully and choose to "Save Connection Details", the profile is saved.
+- **Direct Connect**: Tap a saved profile to connect immediately.
+- **Edit**: Tap the **Pencil Icon** to modify connection details before connecting.
+- **Delete**: Long-press a profile to remove it.
 
 ## File Browsing
 
@@ -25,12 +29,23 @@
 1. Locate the file you want to download.
 2. Tap the **More Options** (three vertical dots) icon on the right.
 3. Select **Download**.
-4. The file will be saved to your device's **Downloads** folder. A notification message will confirm the location.
+4. The file will be saved to your device's **Downloads** folder.
+5. **Permissions**: The app will request storage permission only the first time you try to download. Please grant it to proceed.
 
 ### Upload
 1. Tap the **+ (Plus)** button in the bottom right corner.
-2. Only select the file you wish to upload from your device's file picker.
-3. The file will be uploaded to the *current* directory you are viewing in the app.
+2. Select the file you wish to upload from your device's file picker.
+3. A **Progress Dialog** will appear showing:
+   - Upload progress bar.
+   - Percentage completion.
+   - Current upload speed (e.g., 1.2 MB/s).
+4. Do not close the app while uploading. The dialog will close automatically upon completion.
+
+### Create Folder
+1. Tap the **Create Folder** icon (folder with a plus sign) in the top menu bar.
+2. Enter a name for the new folder in the dialog box.
+3. Tap **Create**.
+4. The new folder will appear in the list immediately.
 
 ### Delete
 1. Tap the **More Options** icon on the file.

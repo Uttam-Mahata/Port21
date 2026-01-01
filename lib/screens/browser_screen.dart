@@ -39,6 +39,11 @@ class BrowserScreen extends StatelessWidget {
               icon: const Icon(Icons.refresh),
               onPressed: () => context.read<FTPProvider>().refresh(),
             ),
+             IconButton(
+              icon: const Icon(Icons.create_new_folder),
+              tooltip: 'Create Folder',
+              onPressed: () => _showCreateFolderDialog(context),
+            ),
             IconButton(
               icon: const Icon(Icons.logout),
               onPressed: () async {
@@ -293,5 +298,74 @@ class BrowserScreen extends StatelessWidget {
        if (confirm == true) {
            await context.read<FTPProvider>().deleteFile(file);
        }
+  }
+  
+  Future<void> _showCreateFolderDialog(BuildContext context) async {
+    final String? folderName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => const CreateFolderDialog(),
+    );
+
+    if (folderName != null && folderName.isNotEmpty && context.mounted) {
+       bool success = await context.read<FTPProvider>().createDirectory(folderName);
+       if (context.mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(
+           SnackBar(content: Text(success ? "Created $folderName" : "Failed to create directory")),
+         );
+       }
+    }
+  }
+}
+
+class CreateFolderDialog extends StatefulWidget {
+  const CreateFolderDialog({super.key});
+
+  @override
+  State<CreateFolderDialog> createState() => _CreateFolderDialogState();
+}
+
+class _CreateFolderDialogState extends State<CreateFolderDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Create Folder'),
+      content: TextField(
+        controller: _controller,
+        decoration: const InputDecoration(
+          labelText: 'Folder Name',
+          hintText: 'New Folder',
+        ),
+        autofocus: true,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () {
+            final name = _controller.text.trim();
+            if (name.isNotEmpty) {
+              Navigator.pop(context, name);
+            }
+          },
+          child: const Text('Create'),
+        ),
+      ],
+    );
   }
 }

@@ -1,5 +1,7 @@
 # Port21
 
+![Port21 Logo](port21.png)
+
 Port21 is a modern FTP client application built with Flutter for Android. It supports standard FTP as well as secure FTPS connections.
 
 ## Features
@@ -34,17 +36,23 @@ Port21 is a modern FTP client application built with Flutter for Android. It sup
    flutter run
    ```
 
-### Troubleshooting: "What went wrong: 25"
+### Troubleshooting: Java Warnings or Build Errors
 
-If you encounter a build error stating `What went wrong: 25` or `java.lang.System::load` restrictions, it is likely due to an incompatibility with Java 25.
+If you encounter warnings like `WARNING: A restricted method in java.lang.System has been called` or build errors related to Java version:
 
-**Fix**:
-Ensure you are using Java 21. You may need to explicitely tell Gradle to use it by adding the following line to `android/gradle.properties`:
+1.  **Java Version**: Ensure you are using Java 21 (JDK 21). Java 25 is currently too new for some Gradle components.
+2.  **Fix**: Set `JAVA_HOME` to your Java 21 installation before running Gradle:
+    ```bash
+    export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+    ./gradlew run
+    ```
 
-```properties
-org.gradle.java.home=/usr/lib/jvm/java-21-openjdk-amd64
-```
-(Adjust the path to match your Java 21 installation).
+## Features added in v1.1
+
+- **Upload Progress**: Real-time progress bar and percentage during file uploads.
+- **Speed Indicator**: Shows current upload speed (e.g., MB/s).
+- **Smart Permissions**: Storage permissions are requested only when needed (on download), not at startup.
+- **Quick Connect**: Saved profiles connect directly with one tap. Use the Edit icon to modify details.
 
 ## Usage
 

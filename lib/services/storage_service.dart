@@ -13,8 +13,12 @@ class StorageService {
     final prefs = await SharedPreferences.getInstance();
     List<ConnectionProfile> profiles = await getProfiles();
     
-    // Check if profile with same host exists, update it
-    final index = profiles.indexWhere((p) => p.host == profile.host);
+    // Check if profile with same host, port, and username exists
+    final index = profiles.indexWhere((p) => 
+        p.host == profile.host && 
+        p.port == profile.port && 
+        p.username == profile.username
+    );
     if (index != -1) {
       profiles[index] = profile;
     } else {
